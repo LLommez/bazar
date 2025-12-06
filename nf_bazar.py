@@ -23,18 +23,82 @@ def convert_google_sheet_url(url):
 
 # ================= BASE DE DADOS =================
 
-cpf_banco = pd.read_csv(
-    convert_google_sheet_url(
-        'https://docs.google.com/spreadsheets/d/1R2ziBev9t4c8xJpWbf5rtzjFMpCgfEko7B3I2iBMhG4/edit?gid=0#gid=0'
-    ), dtype=str
-)
+# cpf_banco = pd.read_csv(
+#     convert_google_sheet_url(
+#         'https://docs.google.com/spreadsheets/d/1R2ziBev9t4c8xJpWbf5rtzjFMpCgfEko7B3I2iBMhG4/edit?gid=0#gid=0'
+#     ), dtype=str
+# )
 
-produto_banco = pd.read_excel('estoque.xlsx')
-produto_banco.columns = produto_banco.columns.str.strip()
-produto_banco['PREÇO DE VENDA'] = np.around(produto_banco['PREÇO DE VENDA'].astype(float), 2)
+# produto_banco = pd.read_csv(
+#     convert_google_sheet_url(
+#         'https://docs.google.com/spreadsheets/d/1h9FeZBUxljOAe5uy3xKWUKwTvdBNNylT/edit?gid=1165343595#gid=1165343595'
+#     ), dtype=str
+# )
 
-produtos_disponiveis = produto_banco['PRODUTO'].dropna().astype(str).tolist()
-nomes_disponiveis = cpf_banco['NOME'].dropna().astype(str).tolist()
+# # produto_banco = pd.read_excel('estoque.xlsx')
+# produto_banco.columns = produto_banco.columns.str.strip()
+# # produto_banco['PREÇO DE VENDA'] = np.around(produto_banco['PREÇO DE VENDA'].astype(float), 2)
+# produto_banco['PREÇO DE VENDA'] = (
+# produto_banco['PREÇO DE VENDA']
+# .astype(str)
+# .str.replace('R$', '', regex=False)
+# .str.replace('.', '', regex=False)
+# .str.replace(',', '.', regex=False)
+# .str.strip()
+# .astype(float)
+# .round(2)
+# )
+
+# produtos_disponiveis = produto_banco['PRODUTO'].dropna().astype(str).tolist()
+# nomes_disponiveis = cpf_banco['NOME'].dropna().astype(str).tolist()
+
+def recarregar_base():
+    global cpf_banco, produto_banco, produtos_disponiveis, nomes_disponiveis
+
+    try:
+        cpf_banco = pd.read_csv(
+            convert_google_sheet_url(
+                'https://docs.google.com/spreadsheets/d/1R2ziBev9t4c8xJpWbf5rtzjFMpCgfEko7B3I2iBMhG4/edit?gid=0#gid=0'
+            ), dtype=str
+        )
+
+        produto_banco = pd.read_csv(
+            convert_google_sheet_url(
+                'https://docs.google.com/spreadsheets/d/1h9FeZBUxljOAe5uy3xKWUKwTvdBNNylT/edit?gid=1165343595#gid=1165343595'
+            ), dtype=str
+        )
+
+        produto_banco.columns = produto_banco.columns.str.strip()
+
+        produto_banco['PREÇO DE VENDA'] = (
+            produto_banco['PREÇO DE VENDA']
+            .astype(str)
+            .str.replace('R$', '', regex=False)
+            .str.replace('.', '', regex=False)
+            .str.replace(',', '.', regex=False)
+            .str.strip()
+            .astype(float)
+            .round(2)
+        )
+
+        produtos_disponiveis = produto_banco['PRODUTO'].dropna().astype(str).tolist()
+        nomes_disponiveis = cpf_banco['NOME'].dropna().astype(str).tolist()
+
+        lista_produto.delete(0, tk.END)
+        lista_cpf.delete(0, tk.END)
+
+        for produto in produtos_disponiveis:
+            lista_produto.insert(tk.END, produto)
+
+        for nome in nomes_disponiveis:
+            lista_cpf.insert(tk.END, nome)
+
+        total_var.set("Base atualizada com sucesso.")
+
+    except Exception as e:
+        total_var.set("Falha ao atualizar base.")
+        print("Erro ao recarregar:", e)
+
 
 # ================= VARIÁVEIS GLOBAIS =================
 
@@ -308,5 +372,16 @@ btn_remover.grid(row=6, column=0)
 
 btn_finalizar = tk.Button(frame_direito, text="Finalizar venda", width=25, command=finalizar_compra)
 btn_finalizar.grid(row=7, column=0, pady=20)
+
+btn_atualizar = tk.Button(
+    frame_direito,
+    text="Atualizar base de dados",
+    width=25,
+    bg="#1f6aa5",
+    fg="white",
+    command=recarregar_base
+)
+btn_atualizar.grid(row=8, column=0, pady=10)
+
 
 janela.mainloop()
