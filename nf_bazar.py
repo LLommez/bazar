@@ -21,39 +21,15 @@ def convert_google_sheet_url(url):
     replacement = lambda m: f'https://docs.google.com/spreadsheets/d/{m.group(1)}/export?' + (f'gid={m.group(3)}&' if m.group(3) else '') + 'format=csv'
     return re.sub(pattern, replacement, url)
 
-# ================= BASE DE DADOS =================
-
-# cpf_banco = pd.read_csv(
-#     convert_google_sheet_url(
-#         'https://docs.google.com/spreadsheets/d/1R2ziBev9t4c8xJpWbf5rtzjFMpCgfEko7B3I2iBMhG4/edit?gid=0#gid=0'
-#     ), dtype=str
-# )
-
-# produto_banco = pd.read_csv(
-#     convert_google_sheet_url(
-#         'https://docs.google.com/spreadsheets/d/1h9FeZBUxljOAe5uy3xKWUKwTvdBNNylT/edit?gid=1165343595#gid=1165343595'
-#     ), dtype=str
-# )
-
-# # produto_banco = pd.read_excel('estoque.xlsx')
-# produto_banco.columns = produto_banco.columns.str.strip()
-# # produto_banco['PREÇO DE VENDA'] = np.around(produto_banco['PREÇO DE VENDA'].astype(float), 2)
-# produto_banco['PREÇO DE VENDA'] = (
-# produto_banco['PREÇO DE VENDA']
-# .astype(str)
-# .str.replace('R$', '', regex=False)
-# .str.replace('.', '', regex=False)
-# .str.replace(',', '.', regex=False)
-# .str.strip()
-# .astype(float)
-# .round(2)
-# )
-
-# produtos_disponiveis = produto_banco['PRODUTO'].dropna().astype(str).tolist()
-# nomes_disponiveis = cpf_banco['NOME'].dropna().astype(str).tolist()
+vendedor_banco = pd.read_csv(
+            convert_google_sheet_url(
+                'https://docs.google.com/spreadsheets/d/1eL4YnWSxwyXdtoGn7XeRdk1IGDwFczx_3iQ3JnDAs7o/edit?usp=drive_link'
+            ), dtype=str
+        )
+lista_vendedores = vendedor_banco['VENDEDOR'].dropna().astype(str).tolist()
 
 def recarregar_base():
-    global cpf_banco, produto_banco, produtos_disponiveis, nomes_disponiveis
+    global cpf_banco, produto_banco, produtos_disponiveis, nomes_disponiveis, lista_vendedores
 
     try:
         cpf_banco = pd.read_csv(
@@ -67,7 +43,7 @@ def recarregar_base():
                 'https://docs.google.com/spreadsheets/d/1h9FeZBUxljOAe5uy3xKWUKwTvdBNNylT/edit?gid=1165343595#gid=1165343595'
             ), dtype=str
         )
-
+        
         produto_banco.columns = produto_banco.columns.str.strip()
 
         produto_banco['PREÇO DE VENDA'] = (
@@ -83,6 +59,18 @@ def recarregar_base():
 
         produtos_disponiveis = produto_banco['PRODUTO'].dropna().astype(str).tolist()
         nomes_disponiveis = cpf_banco['NOME'].dropna().astype(str).tolist()
+        
+
+        menu_vendedores["menu"].delete(0, "end")
+
+        for vendedor in lista_vendedores:
+            menu_vendedores["menu"].add_command(
+                label=vendedor,
+                command=lambda v=vendedor: vendedor_var.set(v)
+            )
+
+        vendedor_var.set(lista_vendedores[0] if lista_vendedores else "Selecione")
+
 
         lista_produto.delete(0, tk.END)
         lista_cpf.delete(0, tk.END)
@@ -109,7 +97,7 @@ CPF = None
 NOME = None
 
 carrinho = []
-
+# lista_vendedores = []
 # ================= FUNÇÕES CLIENTE =================
 
 def atualizar_lista_cpf(*args):
@@ -222,13 +210,10 @@ RECIBO FISCAL
 Declaro, para os devidos fins, que recebi de {NOME},
 inscrito no CPF sob o nº {CPF},
 a importância total de R$ {total_geral:.2f}
-({valor_extenso}),
-
-referente ao pagamento correspondente à aquisição dos seguintes produtos
+({valor_extenso}), referente ao pagamento correspondente à aquisição dos seguintes produtos
 no Bazar Beneficente de itens doados pela Receita Federal:
 
 {lista_produtos_texto}
-
 Nova Serrana - MG, {day} de {month} de {year}.
 
 Assinatura:
@@ -277,7 +262,6 @@ def resetar_tela():
     global carrinho, PRODUTO, VALOR, VENDEDOR, CPF, NOME
 
     carrinho = []
-
     PRODUTO = None
     VALOR = None
     VENDEDOR = None
@@ -310,7 +294,9 @@ def finalizar_compra():
 janela = tk.Tk()
 janela.title("Sistema de Vendas")
 janela.geometry("900x550")
-janela.tk.call('tk', 'scaling', 0.9)
+janela.update_idletasks()
+janela.tk.call('tk', 'scaling', 1.4)
+# janela.tk.call('tk', 'scaling', 0.9)
 
 frame_esquerdo = tk.Frame(janela)
 frame_esquerdo.grid(row=0, column=0, padx=10, pady=10, sticky="n")
@@ -357,7 +343,7 @@ lista_cpf.bind("<<ListboxSelect>>", selecionar_cpf)
 
 tk.Label(frame_direito, text="Vendedor").grid(row=3, column=0)
 
-lista_vendedores = ["vendedor1", "vendedor2", "vendedor3"]
+
 vendedor_var = tk.StringVar()
 vendedor_var.set(lista_vendedores[0])
 
